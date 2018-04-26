@@ -1,16 +1,22 @@
-const root = document.body.appendChild(document.createElement('div'))
-const html = require('yo-yo')
-const state = { n: 0 }
+var h = require('virtual-dom/h')
+var xtend = require('xtend')
 
-const update = () => {
-  const onclick = () => {
-    state.n++
-    update()
-  }
-  html.update(root, html`<div>
-    <h1>clicked ${state.n} times</h1>
-    <button onclick=${onclick}>click</button>
-  </div>`)
+var main = require('main-loop')
+var state = {
+  path: location.pathname
 }
+var router = require('./router.js')
+var loop = main(state, render, require('virtual-dom'))
+var target = document.querySelector('#content')
+target.parentNode.replaceChild(loop.target, target)
 
-update()
+var show = require('single-page')(function (href) {
+  loop.update(xtend({ path: href }))
+})
+require('catch-links')(window, show)
+
+function render (state) {
+  var m = router.match(state.path)
+  if (!m) return h('div.error', 'not found')
+  else return m.fn(xtend(m, { state: state }))
+}
